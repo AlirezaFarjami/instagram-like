@@ -41,7 +41,7 @@
         "session": false,
         "firstPartyDomain": "",
         "partitionKey": null,
-        "expirationDate": 1746272980,
+        "expirationDate": 1746274593,
         "storeId": null
     },
     {
@@ -56,7 +56,7 @@
         "session": false,
         "firstPartyDomain": "",
         "partitionKey": null,
-        "expirationDate": 1769946580,
+        "expirationDate": 1769948193,
         "storeId": null
     },
     {
@@ -101,7 +101,7 @@
         "session": false,
         "firstPartyDomain": "",
         "partitionKey": null,
-        "expirationDate": 1739101774,
+        "expirationDate": 1739103459,
         "storeId": null
     },
     {
@@ -136,7 +136,7 @@
     },
     {
         "name": "rur",
-        "value": "\"RVA\\05472329672386\\0541770032979:01f75840508127211e67656658f206085b94958979c3de8ed1a708f62837b261a5651423\"",
+        "value": "\"RVA\\05472329672386\\0541770034592:01f7f5666cb6f3c62089e463b2410438a355aae3351e985e67d0a038a3d98bbc0abf3145\"",
         "domain": ".instagram.com",
         "hostOnly": false,
         "path": "/",

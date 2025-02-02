@@ -1,21 +1,35 @@
 import json
 
-# Read the input.json file
-try:
-    with open("raw-cookies.json", "r", encoding="utf-8") as infile:
+def extract_cookies(file_path="raw-cookies.json") -> dict:
+    """
+    Reads a JSON file containing cookies and returns a dictionary where
+    the keys are cookie names and the values are cookie values.
+    
+    Parameters:
+        file_path (str): The path to the JSON file containing the cookies.
+        
+    Returns:
+        dict: A dictionary mapping cookie names to their values.
+        
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+        json.JSONDecodeError: If the file is not a valid JSON.
+    """
+    # Read the input JSON file
+    with open(file_path, "r", encoding="utf-8") as infile:
         cookies = json.load(infile)
-except FileNotFoundError:
-    print("Error: raw-cookies.json file not found!")
-    exit(1)
-except json.JSONDecodeError:
-    print("Error: raw-cookies.json is not a valid JSON file!")
-    exit(1)
+    
+    # Extract relevant cookies: assuming cookies is a list of dictionaries
+    filtered_cookies = {cookie["name"]: cookie["value"] for cookie in cookies}
+    
+    return filtered_cookies
 
-# Extract relevant cookies
-filtered_cookies = {cookie["name"]: cookie["value"] for cookie in cookies}
-
-# Write the filtered cookies to output.json
-with open("output.json", "w", encoding="utf-8") as outfile:
-    json.dump(filtered_cookies, outfile, indent=4)
-
-print("Cookies have been successfully extracted and saved to output.json!")
+# Example usage:
+if __name__ == "__main__":
+    try:
+        cookies_dict = extract_cookies()
+        print("Extracted Cookies:", cookies_dict)
+    except FileNotFoundError:
+        print("Error: raw-cookies.json file not found!")
+    except json.JSONDecodeError:
+        print("Error: raw-cookies.json is not a valid JSON file!")

@@ -1,32 +1,41 @@
 import requests
 import logging
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# User's Instagram cookies (Replace with actual values)
-cookies = {
-    "ps_n": "1",
-    "datr": "sfidZyOdcaaRYJ1f1Hx8FZgr",
-    "ds_user_id": "72329672386",
-    "csrftoken": "nFfvwXCZf2fOuqDT1nAwVd6MJ7rqRz0d",
-    "ig_did": "58E116AC-AFCD-45C1-B079-324774AC0572",
-    "ps_l": "1",
-    "wd": "1920x955",
-    "mid": "Z534sQALAAGT4_d6MvhRhUua9Sc8",
-    "sessionid": "72329672386%3A5WRQrbjRCGZJKv%3A8%3AAYdJbnjbkg9tNAJpye0C2eDIYhYyI6I7n0OVAfdfsQ",
-    "rur": "\"RVA\\05472329672386\\0541770032979:01f75840508127211e67656658f206085b94958979c3de8ed1a708f62837b261a5651423\""
-}
+def extract_cookies(file_path="raw-cookies.json") -> dict:
+    """
+    Reads a JSON file containing cookies and returns a dictionary where
+    the keys are cookie names and the values are cookie values.
+    
+    Parameters:
+        file_path (str): The path to the JSON file containing the cookies.
+        
+    Returns:
+        dict: A dictionary mapping cookie names to their values.
+        
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+        json.JSONDecodeError: If the file is not a valid JSON.
+    """
+    # Read the input JSON file
+    with open(file_path, "r", encoding="utf-8") as infile:
+        cookies = json.load(infile)
+    
+    # Extract relevant cookies: assuming cookies is a list of dictionaries
+    filtered_cookies = {cookie["name"]: cookie["value"] for cookie in cookies}
+    
+    return filtered_cookies
 
-# Headers to mimic a real browser request
-headers = {
+# Function to create a session with cookies and headers
+def create_instagram_session(cookies: dict):
+    headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
     "Referer": "https://www.instagram.com/",
     "X-CSRFToken": cookies["csrftoken"]
-}
-
-# Function to create a session with cookies and headers
-def create_instagram_session():
+    }
     session = requests.Session()
     session.cookies.update(cookies)
     session.headers.update(headers)
@@ -57,5 +66,6 @@ def like_post(session: requests.Session, media_id: str):
         return (False, str(e))
 
 # Create session and like a post
-session = create_instagram_session()
-like_post(session, "3558933350313189864")
+cookies = extract_cookies(file_path="raw-cookies.json")
+session = create_instagram_session(cookies)
+like_post(session, "3474505257687952484")
