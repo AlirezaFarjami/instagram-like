@@ -5,19 +5,19 @@
     },
     {
         "name": "datr",
-        "value": "sfidZyOdcaaRYJ1f1Hx8FZgr"
+        "value": "abc123XYZfakeDATA987"
     },
     {
         "name": "ds_user_id",
-        "value": "72329672386"
+        "value": "1234567890"
     },
     {
         "name": "csrftoken",
-        "value": "nFfvwXCZf2fOuqDT1nAwVd6MJ7rqRz0d"
+        "value": "fakeCSRFtoken1234567890abcdef"
     },
     {
         "name": "ig_did",
-        "value": "58E116AC-AFCD-45C1-B079-324774AC0572"
+        "value": "FAKE-ID-1234-5678-9101-ABCDEF123456"
     },
     {
         "name": "ps_l",
@@ -25,30 +25,30 @@
     },
     {
         "name": "wd",
-        "value": "1920x379"
+        "value": "1920x1080"
     },
     {
         "name": "mid",
-        "value": "Z534sQALAAGT4_d6MvhRhUua9Sc8"
+        "value": "FAKE-MID-ABCDEFGH123456"
     },
     {
         "name": "sessionid",
-        "value": "72329672386%3A5WRQrbjRCGZJKv%3A8%3AAYfmIAi-P_hscr5aCFQ9xYhZnw4eYIOZMGWLraruFA"
+        "value": "1234567890%3AFAKESESSION%3A8%3AABCDEF1234567890"
     },
     {
         "name": "rur",
-        "value": "\"RVA\\05472329672386\\0541770103733:01f70e0eccc5366ca0989b59f76a373cd54a75dfe0cfe4176a524826504606e0f2306ed2\""
+        "value": "\"FAKE-RUR\\0541234567890\\0541234567890:01f7bc4c558f96FAKErurTOKENabcdef123456\""
     },
     {
         "name": "csrftoken",
-        "value": "nFfvwXCZf2fOuqDT1nAwVd6MJ7rqRz0d"
+        "value": "fakeCSRFtoken9876543210abcdef"
     },
     {
         "name": "rur",
-        "value": "\"RVA\\05472329672386\\0541770103764:01f7077c50c0681deb7c6d64641e23873f33a019f1479f2375f924096b978953afedd5ef\""
+        "value": "\"FAKE-RUR\\0541234567890\\0540987654321:01f7b3e888e91698FAKE_RUR_TOKENabcdef123456\""
     },
     {
         "name": "ds_user_id",
-        "value": "72329672386"
+        "value": "1234567890"
     }
 ]

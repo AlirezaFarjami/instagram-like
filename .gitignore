@@ -6,6 +6,7 @@ __pycache__/
 *.csv
 testconsume/test.py
 test2.py
+shortcode.py
 testconsume
 
 # IDE and editor settings

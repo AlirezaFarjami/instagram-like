@@ -156,11 +156,17 @@ def like_post(session: requests.Session, media_id: str):
 
 def extract_shortcode(instagram_url) -> str:
     """
-    Extracts and returns the shortcode from an Instagram post URL.
-    For example, given "https://www.instagram.com/p/DFiLS_II0aa/", it returns "DFiLS_II0aa".
-    If the URL does not match the expected format, returns None.
+    Extracts and returns the shortcode from an Instagram post or reel URL.
+    
+    Works for:
+    - Posts: "https://www.instagram.com/p/DFiLS_II0aa/"
+    - Reels: "https://www.instagram.com/username/reel/DFiIwE6u9ga/"
+    
+    Returns:
+    - The shortcode (e.g., "DFiLS_II0aa" or "DFiIwE6u9ga") if found.
+    - None if the URL does not match the expected format.
     """
-    match = re.search(r'/p/([^/]+)/', instagram_url)
+    match = re.search(r'/(?:p|reel)/([^/]+)/', instagram_url)
     return match.group(1) if match else None
 
 def from_shortcode(shortcode) -> str :
@@ -188,23 +194,108 @@ def from_shortcode(shortcode) -> str :
 
     return str(total)
 
+def get_latest_post_media_id(session: requests.Session, page_name: str) -> str:
+    """
+    Fetches the latest post media ID for a given Instagram page.
+    """
+    payload = {
+        "av": "17841472251591209",
+        "__d": "www",
+        "__user": "0",
+        "__a": "1",
+        "__req": "7",
+        "__hs": "20122.HYP:instagram_web_pkg.2.1...1",
+        "dpr": "1",
+        "__ccg": "MODERATE",
+        "__rev": "1019779322",
+        "__s": "ogbayt:tcez1o:es29r3",
+        "__hsi": "7467142648817593542",
+        "__comet_req": "7",
+        "fb_dtsg": "NAcMw7_GPycNRsJBCXi-B0BVEjmR39pFQ_tOBb7Zsa1nHc2axd4YsGQ:17864721031021537:1738415853",
+        "jazoest": "26113",
+        "lsd": "o2qh5hkPEiMagabLkmLGw2",
+        "__spin_r": "1019779322",
+        "__spin_b": "trunk",
+        "__spin_t": "1738579629",
+        "fb_api_caller_class": "RelayModern",
+        "fb_api_req_friendly_name": "PolarisProfilePostsQuery",
+        "variables": json.dumps({
+            "data": {
+                "count": 12,
+                "include_reel_media_seen_timestamp": True,
+                "include_relationship_info": True,
+                "latest_besties_reel_media": True,
+                "latest_reel_media": True
+            },
+            "username": page_name, 
+            "__relay_internal__pv__PolarisIsLoggedInrelayprovider": True
+        }),
+        "server_timestamps": "true",
+        "doc_id": "8934560356598281"
+    }
+
+    response = session.post(url="https://www.instagram.com/graphql/query",  data=payload)
+
+    if response.status_code == 200:
+            response_text = response.text  # Get raw text
+
+            # Regular expression to find the first occurrence of "pk":"some_number"
+            match = re.search(r'"pk":"(\d+)"', response_text)
+            
+            if match:
+                print(match.group(1))
+                return match.group(1)  # Extract and return the first PK found
+            else:
+                return None  # Return None if no PK is found
+    else:
+            return None  # Return None if request fails
+
+import logging
 
 def main():
     """Main function to create a session and like a post."""
-    cookies = extract_cookies(file_path="cookies.json")
+    cookies = extract_cookies("cookies.json")
     session = create_instagram_session(cookies)
-    media_id = from_shortcode(shortcode)
-    
-    if session:
-        post_url = "https://www.instagram.com/p/DFiLS_II0aa/"
+
+    if not session:
+        return
+
+    print(
+        """
+Hello! I can do two things for you:
+1) Like a post using its URL (e.g., https://www.instagram.com/p/DFkx8PAJOX0/)
+2) Like the latest post from a page using its username (e.g., "nike")
+"""
+    )
+
+    try:
+        choice = int(input("Please enter the number of your choice: "))
+    except ValueError:
+        logging.error("❌ Invalid input. Please enter 1 or 2.")
+        return
+
+    if choice == 1:
+        post_url = input("Enter the post URL: ")
         shortcode = extract_shortcode(post_url)
-        success, response = like_post(session, media_id)
+        media_id = from_shortcode(shortcode) if shortcode else None
 
-        if success:
-            logging.info(f"🎉 Successfully liked post {media_id}")
-        else:
-            logging.error(f"❌ Failed to like post {media_id}. Reason: {response}")
+        if media_id:
+            success, response = like_post(session, media_id)
+            if success:
+                logging.info(f"🎉 Successfully liked post {media_id}")
+            else:
+                logging.error(f"❌ Failed to like post {media_id}. Reason: {response}")
 
+    elif choice == 2:
+        page_name = input("Enter the username of the page: ")
+        media_id = get_latest_post_media_id(session, page_name)
+
+        if media_id:
+            success, response = like_post(session, media_id)
+            if success:
+                logging.info(f"🎉 Successfully liked the latest post from {page_name}")
+            else:
+                logging.error(f"❌ Failed to like post from {page_name}. Reason: {response}")
 
 if __name__ == "__main__":
     main()
