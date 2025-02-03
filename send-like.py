@@ -1,11 +1,7 @@
 import requests
 import logging
 import json
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-import time
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -158,103 +154,57 @@ def like_post(session: requests.Session, media_id: str):
         return (False, str(e))
 
 
-def fetch_post_html(post_url: str, cookies_file="cookies.json", output_file="post.html"):
+def extract_shortcode(instagram_url) -> str:
     """
-    Fetches the fully rendered HTML content of an Instagram post using Selenium with authentication cookies
-    and saves it to a file.
-
-    Parameters:
-        post_url (str): The URL of the Instagram post.
-        cookies_file (str): The filename where Instagram cookies are stored.
-        output_file (str): The filename to save the HTML content.
-
-    Returns:
-        bool: True if the operation was successful, False otherwise.
+    Extracts and returns the shortcode from an Instagram post URL.
+    For example, given "https://www.instagram.com/p/DFiLS_II0aa/", it returns "DFiLS_II0aa".
+    If the URL does not match the expected format, returns None.
     """
-    logging.info(f"🔄 Fetching Instagram post: {post_url}")
+    match = re.search(r'/p/([^/]+)/', instagram_url)
+    return match.group(1) if match else None
 
-    # Load cookies from JSON file
-    try:
-        with open(cookies_file, "r", encoding="utf-8") as infile:
-            cookies = json.load(infile)
-    except FileNotFoundError:
-        logging.error(f"❌ Cookie file '{cookies_file}' not found.")
-        return False
-    except json.JSONDecodeError:
-        logging.error(f"❌ Failed to parse '{cookies_file}', invalid JSON format.")
-        return False
+def from_shortcode(shortcode) -> str :
+    """
+    Converts an Instagram-style shortcode back into its media id (as a decimal string).
+    """
+    lower = 'abcdefghijklmnopqrstuvwxyz'
+    upper = lower.upper()
+    numbers = '0123456789'
+    ig_alphabet = upper + lower + numbers + '-_'
+    bigint_alphabet = numbers + lower
 
-    # Configure Selenium to run headless (no visible browser window)
-    options = Options()
-    options.add_argument("--headless")  # Run without GUI
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("start-maximized")
-    options.add_argument("disable-infobars")
-    options.add_argument("--disable-blink-features=AutomationControlled")  # Prevent bot detection
+    def repl(match):
+        ch = match.group(0)
+        idx = ig_alphabet.index(ch)
+        return bigint_alphabet[idx] if idx < len(bigint_alphabet) else f"<{idx}>"
 
-    # Start Selenium WebDriver
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
+    intermediate = re.sub(r'\S', repl, shortcode)
+    tokens = re.findall(r'<(\d+)>|(\w)', intermediate)
 
-    try:
-        # Open Instagram homepage first to set cookies
-        driver.get("https://www.instagram.com/")
+    total = 0
+    for token in tokens:
+        value = int(token[0]) if token[0] != '' else bigint_alphabet.index(token[1])
+        total = total * 64 + value
 
-        # Inject cookies into the browser
-        for cookie in cookies:
-            driver.add_cookie({"name": cookie["name"], "value": cookie["value"], "domain": ".instagram.com"})
-
-        logging.info("✅ Cookies loaded successfully.")
-
-        # Open the Instagram post URL (after setting cookies)
-        driver.get(post_url)
-
-        # Wait for JavaScript to load completely
-        time.sleep(5)  # Increase if needed for slow networks
-
-        # Get the fully rendered HTML source
-        page_source = driver.page_source
-
-        # Save the HTML content to a file
-        with open(output_file, "w", encoding="utf-8") as file:
-            file.write(page_source)
-
-        logging.info(f"✅ Post HTML saved to {output_file}")
-        return True
-
-    except Exception as e:
-        logging.error(f"❌ Error while fetching post HTML: {e}")
-        return False
-
-    finally:
-        driver.quit()  # Close the browser
-
-# def main():
-#     """Main function to create a session and like a post."""
-#     cookies = extract_cookies(file_path="cookies.json")
-#     session = create_instagram_session(cookies)
-
-#     if session:
-#         media_id = "3556140434868244822"  # Example media ID, can be changed
-#         success, response = like_post(session, media_id)
-
-#         if success:
-#             logging.info(f"🎉 Successfully liked post {media_id}")
-#         else:
-#             logging.error(f"❌ Failed to like post {media_id}. Reason: {response}")
+    return str(total)
 
 
 def main():
-    """Main function to fetch an Instagram post HTML using Selenium with authentication cookies."""
-    post_url = "https://www.instagram.com/p/DE9kM94u6Lq/"  # Replace with any post URL
-    success = fetch_post_html(post_url, cookies_file="cookies.json")
+    """Main function to create a session and like a post."""
+    cookies = extract_cookies(file_path="cookies.json")
+    session = create_instagram_session(cookies)
+    media_id = from_shortcode(shortcode)
+    
+    if session:
+        post_url = "https://www.instagram.com/p/DFiLS_II0aa/"
+        shortcode = extract_shortcode(post_url)
+        success, response = like_post(session, media_id)
 
-    if success:
-        logging.info(f"🎉 Successfully saved HTML for {post_url}")
-    else:
-        logging.error(f"❌ Failed to fetch and save HTML for {post_url}")
+        if success:
+            logging.info(f"🎉 Successfully liked post {media_id}")
+        else:
+            logging.error(f"❌ Failed to like post {media_id}. Reason: {response}")
+
 
 if __name__ == "__main__":
     main()

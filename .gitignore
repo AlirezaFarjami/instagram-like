@@ -5,6 +5,7 @@ __pycache__/
 # Test and temporary files
 *.csv
 testconsume/test.py
+test2.py
 testconsume
 
 # IDE and editor settings
