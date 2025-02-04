@@ -8,7 +8,7 @@ testconsume/test.py
 test2.py
 shortcode.py
 testconsume
-
+getpage.py
 # IDE and editor settings
 .vscode/
 .idea/
