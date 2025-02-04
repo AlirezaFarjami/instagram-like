@@ -108,7 +108,3 @@ def fetch_instagram_data(url:str = "https://www.instagram.com/", parameters_file
 
     except requests.exceptions.RequestException as e:
         logging.error(f"❌ Request failed: {e}")
-
-
-if __name__ == "__main__":
-    fetch_instagram_data()

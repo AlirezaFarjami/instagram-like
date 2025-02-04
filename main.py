@@ -7,6 +7,7 @@ import logging
 from helpers import extract_shortcode, from_shortcode
 from cookie_manager import extract_cookies
 from instagram import create_instagram_session, like_post, get_latest_post_media_id
+from update_params import fetch_instagram_data
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -15,7 +16,7 @@ def main():
     """Main function to create a session and like a post."""
     cookies = extract_cookies("cookies.json")
     session = create_instagram_session(cookies)
-
+    fetch_instagram_data()
     if not session:
         return
 
