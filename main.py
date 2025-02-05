@@ -1,7 +1,4 @@
-import requests
 import logging
-import json
-import re
 import logging
 
 from helpers import extract_shortcode, from_shortcode
@@ -60,4 +57,3 @@ Hello! I can do two things for you:
 if __name__ == "__main__":
     main()
 
-https://www.instagram.com/api/v1/media/3560850072297154417/comments/?can_support_threading=true&min_id=%7B%22cached_comments_cursor%22%3A%20%2218481217383028960%22%2C%20%22bifilter_token%22%3A%20%22KIEBAMPfvV9ohT8ACkbi-25MQADL_sZS5SVAAE0H2J_jM0AAD4yPV6c_QABb3RpCTEpAAGRQmHjvuj8AZnT4iWSrQQAo4lfZkLg_AG2-eOmnP0AA8K35Ce4jQACxU7NkiZA_ADLGMI4RJ0AAtBkUakQnQQA8JoD5sJY_AD8uxbs0FEAAAA%3D%3D%22%7D&sort_order=popular
