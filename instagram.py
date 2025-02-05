@@ -113,7 +113,7 @@ def get_latest_post_media_id(session: requests.Session, page_name: str) -> str:
     if not extracted_params:
         logging.error("❌ Extracted parameters are missing or invalid.")
         return None
-
+    print(extracted_params.get("jazoest", "2"))
     payload = {
         "av": extracted_params.get("av", "17841472251591209"),
         "__d": "www",

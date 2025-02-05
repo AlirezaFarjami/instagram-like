@@ -57,6 +57,11 @@ def extract_parameters(html_content, cookies):
     if comet_pattern:
         parameters["__comet_req"] = comet_pattern.group(1)
 
+    # Extract jazoest from the API request pattern
+    jazoest_pattern = re.search(r'__comet_req=\d+&jazoest=(\d+)', html_content)
+    if jazoest_pattern:
+        parameters["jazoest"] = jazoest_pattern.group(1)
+
     # Extract __spin_r, __spin_b, __spin_t
     spin_pattern = re.search(r'"__spin_r":(\d+),"__spin_b":"(.*?)","__spin_t":(\d+)', html_content)
     if spin_pattern:
@@ -73,6 +78,7 @@ def extract_parameters(html_content, cookies):
     parameters["dpr"] = cookies.get("dpr", "")
 
     return parameters
+
 
 def fetch_instagram_data(url:str = "https://www.instagram.com/", parameters_file = "extracted_params.json"):
     """Fetches Instagram page HTML and extracts required parameters."""
