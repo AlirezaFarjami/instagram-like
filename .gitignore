@@ -14,7 +14,7 @@ getpage.py
 .idea/
 *.sublime-workspace
 *.sublime-project
-
+text.txt
 # OS generated files
 .DS_Store
 Thumbs.db
