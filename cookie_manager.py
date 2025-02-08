@@ -66,38 +66,6 @@ def save_cookies_to_file(session: requests.Session, file_path="cookies.json"):
     except Exception as e:
         logging.error(f"❌ Failed to save cookies: {e}")
 
-def create_instagram_session(cookies: dict, extra_headers: dict = None):
-    """
-    Creates a session with Instagram cookies and headers.
-    
-    Parameters:
-        cookies (dict): A dictionary of Instagram cookies.
-        extra_headers (dict, optional): Additional headers to include in the session.
-    
-    Returns:
-        requests.Session or None: A session with Instagram cookies, or None if cookies are missing.
-    """
-    if not cookies:
-        logging.error("❌ Cannot create session: No valid cookies provided.")
-        return None  # Prevent execution if cookies are missing
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        "Referer": "https://www.instagram.com/",
-        "X-CSRFToken": cookies.get("csrftoken", "")  # Get CSRF token if it exists
-    }
-
-    # Merge extra headers if provided
-    if extra_headers:
-        headers.update(extra_headers)
-
-    session = requests.Session()
-    session.cookies.update(cookies)
-    session.headers.update(headers)
-
-    logging.info("✅ Instagram session created successfully.")
-    return session
-
 
 def check_instagram_login(cookies: dict) -> bool:
     """

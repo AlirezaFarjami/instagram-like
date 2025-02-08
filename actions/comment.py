@@ -1,10 +1,9 @@
 import logging
-import json
-import requests
-from cookie_manager import extract_cookies, create_instagram_session, save_cookies_to_file
-from helpers import from_shortcode, extract_shortcode
-
 import random
+import requests
+from cookie_manager import extract_cookies, save_cookies_to_file
+from helpers import from_shortcode, extract_shortcode
+from request_service import create_instagram_session, get_standard_headers
 
 neutral_comments = [
     "That's interesting! 🤔",
@@ -29,36 +28,36 @@ neutral_comments = [
     "Interesting thought! 🤯"
 ]
 
-def get_instagram_comments(media_id: str, output_file="comments.json"):
+def get_instagram_comments(media_id: str):
     """
-    Fetches comments for a given Instagram media ID and saves them to a JSON file.
+    Fetches comments for a given Instagram media ID and returns them.
     
     Parameters:
         media_id (str): The Instagram media ID of the post.
-        output_file (str): The file path to save the comments response.
+    
+    Returns:
+        list: A list of comments from the Instagram post.
     """
     # Extract cookies
     cookies = extract_cookies()
     if not cookies:
         logging.error("❌ No valid cookies found. Exiting.")
-        return
+        return []
     
     # Create a session with cookies
     session = create_instagram_session(cookies)
     if not session:
         logging.error("❌ Failed to create Instagram session. Exiting.")
-        return
+        return []
     
     # Define request headers (some headers from the provided curl request)
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        "Referer": "https://www.instagram.com/",
+    custom_headers = {
         "X-CSRFToken": cookies.get("csrftoken", ""),
         "X-IG-App-ID": "936619743392459",
         "X-ASBD-ID": "129477",
         "X-IG-WWW-Claim": "hmac.AR1Xz_ywrmFEWg9tAlsQAsXKobwAjYkuzkZhbfPwOkkeZoew",
-        "X-Requested-With": "XMLHttpRequest"
     }
+    headers = get_standard_headers(custom_headers=custom_headers)
     session.headers.update(headers)
     
     # Construct the API URL
@@ -68,21 +67,18 @@ def get_instagram_comments(media_id: str, output_file="comments.json"):
         response = session.get(url)
         response.raise_for_status()  # Raise an error for HTTP errors
         
-        # Save the response to a file
-        with open(output_file, "w", encoding="utf-8") as file:
-            json.dump(response.json(), file, indent=4)
-        
-        logging.info(f"✅ Comments saved to {output_file}")
-        
-        # Save updated cookies
-        save_cookies_to_file(session)
+        # Return the comments directly (no file saving)
+        comments = response.json().get('comments', [])
+        logging.info(f"✅ Retrieved {len(comments)} comments")
+        return comments
         
     except requests.exceptions.RequestException as e:
         logging.error(f"❌ Failed to fetch comments: {e}")
+        return []
 
 def reply_to_comment(session: requests.Session, media_id: str, comment_pk: str, username: str):
     """
-    Replies to a given Instagram comment with the text "yes".
+    Replies to a given Instagram comment with a random text from neutral_comments.
     
     Parameters:
         session (requests.Session): Authenticated Instagram session.
@@ -103,41 +99,38 @@ def reply_to_comment(session: requests.Session, media_id: str, comment_pk: str, 
     except requests.exceptions.RequestException as e:
         logging.error(f"❌ Failed to reply to comment: {e}")
 
-def print_first_comment_details_and_reply(comments_file="comments.json", media_id="3551475337331657365"):
+def print_first_comment_details_and_reply(media_id: str):
     """
-    Reads the first comment from the saved JSON file, prints the commenter's pk and username, 
-    and replies to the comment.
+    Fetches the first comment from the Instagram post, prints its details, and replies to it.
     
     Parameters:
-        comments_file (str): The file path of the saved comments JSON.
         media_id (str): The Instagram media ID.
     """
-    try:
-        with open(comments_file, "r", encoding="utf-8") as file:
-            data = json.load(file)
-        
-        # Extract the first comment
-        first_comment = data.get("comments", [])[0]
-        if first_comment:
-            comment_pk = first_comment.get('pk')
-            username = first_comment.get('user', {}).get('username')
-            print(f"First Commenter PK: {comment_pk}, Username: {username}")
-            
-            # Extract cookies and create session
-            cookies = extract_cookies()
-            session = create_instagram_session(cookies)
-            if session:
-                reply_to_comment(session, media_id, comment_pk, username)
-        else:
-            print("No comments found in the file.")
+    comments = get_instagram_comments(media_id)
+    if not comments:
+        logging.error("❌ No comments found or failed to fetch comments.")
+        return
     
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        logging.error(f"❌ Error reading comments file: {e}")
+    # Extract the first comment
+    first_comment = comments[0]
+    comment_pk = first_comment.get('pk')
+    username = first_comment.get('user', {}).get('username')
+    
+    if comment_pk and username:
+        logging.info(f"First Commenter PK: {comment_pk}, Username: {username}")
+        
+        # Extract cookies and create session
+        cookies = extract_cookies()
+        session = create_instagram_session(cookies)
+        if session:
+            reply_to_comment(session, media_id, comment_pk, username)
+    else:
+        logging.error("❌ No valid comment found to reply to.")
 
 if __name__ == "__main__":
     # Example usage (Replace with actual media ID)
     post_url = "https://www.instagram.com/p/DDdvcjbxoi1/"
     shortcode = extract_shortcode(post_url)  
     media_id = from_shortcode(shortcode) if shortcode else None
-    get_instagram_comments(media_id)
-    print_first_comment_details_and_reply(media_id=media_id)
+    if media_id:
+        print_first_comment_details_and_reply(media_id=media_id)

@@ -2,6 +2,8 @@ import requests
 import json
 import logging
 import time
+from request_service import get_standard_headers
+
 
 def instagram_login(username: str, password: str, output_file="cookies.json"):
     """
@@ -30,8 +32,7 @@ def instagram_login(username: str, password: str, output_file="cookies.json"):
         enc_password = f"#PWD_INSTAGRAM_BROWSER:0:{timestamp}:{password}"
         
         # Step 3: Prepare headers and payload
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        custom_headers = {
             "Accept": "*/*",
             "Accept-Language": "en-US,en;q=0.5",
             "Content-Type": "application/x-www-form-urlencoded",
@@ -42,14 +43,13 @@ def instagram_login(username: str, password: str, output_file="cookies.json"):
             "X-IG-WWW-Claim": "0",
             "X-Web-Device-Id": "D812B79E-35E6-4027-8B0B-A497DE00DA4E",
             "X-Web-Session-ID": "::vdgles",
-            "X-Requested-With": "XMLHttpRequest",
             "Origin": "https://www.instagram.com",
-            "Referer": "https://www.instagram.com/",
             "DNT": "1",
             "Sec-GPC": "1",
             "Connection": "keep-alive"
         }
-        
+        headers = get_standard_headers(custom_headers=custom_headers)
+
         payload = {
             "username": username,
             "enc_password": enc_password,
