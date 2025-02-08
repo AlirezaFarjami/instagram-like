@@ -1,31 +1,19 @@
 import logging
+import logging
+
 from helpers import extract_shortcode, from_shortcode
-from cookie_manager import extract_cookies, check_instagram_login, save_cookies_to_file
+from cookie_manager import extract_cookies, check_instagram_login
 from update_params import fetch_instagram_data
-from actions.like import like_post
+from actions.like import like_post, get_latest_post_media_id
 from actions.comment import get_instagram_comments, print_first_comment_details_and_reply
 from actions.login import instagram_login
 from request_service import create_instagram_session
-import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-def check_session_validity(session):
-    """Check if the session is still valid by making a simple request (e.g., accessing the Instagram homepage)."""
-    try:
-        response = session.get("https://www.instagram.com/")
-        if response.status_code == 200 and 'sessionid' in session.cookies:
-            return True
-        else:
-            logging.error("❌ Session is invalid or expired.")
-            return False
-    except requests.exceptions.RequestException as e:
-        logging.error(f"❌ Error while validating session: {e}")
-        return False
-
 def main():
-    """Main function to create a session and perform Instagram actions."""
+    """Main function to create a session and like a post."""
     cookies = extract_cookies("cookies.json")
     is_logged_in = check_instagram_login(cookies)
     
@@ -57,13 +45,11 @@ To continue, please choose option 1 or 2 by entering the corresponding number.
             print("Please re-run the program after updating the cookies.json file with valid cookies")
             return
 
-    # Create Instagram session with the provided cookies
     session = create_instagram_session(cookies)
     if not session:
         print("❌ Failed to create an Instagram session.")
         return
 
-    # Fetch initial parameters
     fetch_instagram_data()
 
     print("Hello! I can do two things for you: ")
@@ -89,22 +75,8 @@ To continue, please choose option 1 or 2 by entering the corresponding number.
         try:
             choice = int(input("Please enter the number of your choice: "))
         except ValueError:
-            logging.error("❌ Invalid input. Please enter a number between 1 and 4.")
-            continue
-
-        if choice == 0:
-            logging.info("Exiting the program")
-            break
-
-        # Check if the session is valid before every action
-        if not check_session_validity(session):
-            print("Your session has expired. Please log in again.")
-            username = input("Enter your Instagram username: ")
-            password = input("Enter your Instagram password: ")
-            instagram_login(username, password)  # Prompt user to log in again
-            cookies = extract_cookies("cookies.json")  # Reload cookies
-            session = create_instagram_session(cookies)  # Re-create session
-            continue  # Skip the current loop iteration and start over
+            logging.error("❌ Invalid input. Please enter the number of one the options")
+            return
 
         if choice == 1:
             post_url = input("Enter the post URL: ")
@@ -115,7 +87,6 @@ To continue, please choose option 1 or 2 by entering the corresponding number.
                 success, response = like_post(session, media_id)
                 if success:
                     logging.info(f"🎉 Successfully liked post {media_id}")
-                    save_cookies_to_file(session)  # Save updated cookies
                 else:
                     logging.error(f"❌ Failed to like post {media_id}. Reason: {response}")
 
@@ -123,13 +94,13 @@ To continue, please choose option 1 or 2 by entering the corresponding number.
             page_name = input("Enter the username of the page: ")
             media_id = get_latest_post_media_id(session, page_name)
             if media_id:
+                print("In proccess")
                 success, response = like_post(session, media_id)
                 if success:
                     logging.info(f"🎉 Successfully liked the latest post from {page_name}")
-                    save_cookies_to_file(session)  # Save updated cookies
                 else:
                     logging.error(f"❌ Failed to like post from {page_name}. Reason: {response}")
-
+        
         elif choice == 3:
             post_url = input("Enter the post URL: ")
             shortcode = extract_shortcode(post_url)
@@ -138,7 +109,6 @@ To continue, please choose option 1 or 2 by entering the corresponding number.
             if media_id:
                 get_instagram_comments(media_id)
                 print_first_comment_details_and_reply(media_id=media_id)
-                save_cookies_to_file(session)  # Save updated cookies
 
         elif choice == 4:
             page_name = input("Enter the username of the page: ")
@@ -147,8 +117,11 @@ To continue, please choose option 1 or 2 by entering the corresponding number.
             if media_id:
                 get_instagram_comments(media_id)
                 print_first_comment_details_and_reply(media_id=media_id)
-                save_cookies_to_file(session)  # Save updated cookies
-
+        elif choice == 0:
+            logging.info("Exiting the program")
+            break
+        else:
+            logging.error("❌ Invalid choice. Please enter a number between 1 and 4.")
         print("What else can I do for you? ")
 
 if __name__ == "__main__":

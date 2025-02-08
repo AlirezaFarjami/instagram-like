@@ -2,8 +2,9 @@ import requests
 import json
 import re
 import logging
-
 from cookie_manager import extract_cookies, save_cookies_to_file
+from request_service import get_standard_headers
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -91,14 +92,8 @@ def fetch_instagram_data(url:str = "https://www.instagram.com/", parameters_file
         return
     session.cookies.update(cookies)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Referer": "https://www.instagram.com/",
-        "Accept-Language": "en-US,en;q=0.9",
-    }
-
     try:
-        response = session.get(url, headers=headers)
+        response = session.get(url, headers=get_standard_headers())
         response.raise_for_status()
 
         # Extract necessary parameters
