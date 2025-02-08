@@ -2,28 +2,72 @@ import logging
 import logging
 
 from helpers import extract_shortcode, from_shortcode
-from cookie_manager import extract_cookies, create_instagram_session
+from cookie_manager import extract_cookies, create_instagram_session, check_instagram_login
 from instagram import like_post, get_latest_post_media_id
 from update_params import fetch_instagram_data
 from comment import get_instagram_comments, print_first_comment_details_and_reply
+from login import instagram_login
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
+import logging
+
 def main():
     """Main function to create a session and like a post."""
+
     cookies = extract_cookies("cookies.json")
-    session = create_instagram_session(cookies)
-    fetch_instagram_data()
-    if not session:
+
+    is_logged_in = check_instagram_login(cookies)
+    
+    if not is_logged_in:
+        print(
+            """
+You are not logged in to Instagram. Please follow one of the options below to proceed:
+1) Log in using your Instagram username and password.
+   - If you choose this, I will guide you to log in to your account so I can proceed with your requests.
+   
+2) If you already have valid cookies, you can update the cookies.json file manually.
+   - Export your cookies from your browser and save them in cookies.json, then re-run the program.
+
+To continue, please choose option 1 or 2 by entering the corresponding number.
+"""
+        )
+    try:
+        choice = int(input("Please enter the number of your choice: "))
+    except ValueError:
+        print("❌ Invalid input. Please enter 1 or 2.")
         return
+
+    if choice == 1:
+        username = input("Please enter your Instagram username: ")
+        password = input("Please enter your Instagram password: ")
+        instagram_login(username = username, password= password)
+    else:
+        print("Please re-run the program after updating the cookies.json file with valid cookies")
+        return 0
+
+    session = create_instagram_session(cookies)
+    if not session:
+        print("❌ Failed to create an Instagram session.")
+        return
+
+    fetch_instagram_data()
 
     print(
         """
 Hello! I can do two things for you:
-1) Like a post using its URL (e.g., https://www.instagram.com/p/DFkx8PAJOX0/)
-2) Like the latest post from a page using its username (e.g., "nike")
-3) Reply the topest comment of a post using its URL (e.g., https://www.instagram.com/p/DFkx8PAJOX0/)
-4) Reply the topest comment of the latest post from a page using its username (e.g., "nike")
+1) Like a post by providing its URL (e.g., https://www.instagram.com/p/DFkx8PAJOX0/)
+   - I will like the post for you.
+
+2) Like the highest post from a specific Instagram page by entering the page username (e.g., "nike").
+   - I will automatically find and like the hightest post from that page.
+
+3) Reply to the top comment of a specific post by entering its URL (e.g., https://www.instagram.com/p/DFkx8PAJOX0/).
+   - I will automatically reply to the top comment on the post with a random text.
+
+4) Reply the topest comment of the highest post from a page using its username (e.g., "nike")
+    - I will automatically reply to the top comment on the topest post with a random text.
+
 """
     )
 
@@ -55,20 +99,27 @@ Hello! I can do two things for you:
                 logging.info(f"🎉 Successfully liked the latest post from {page_name}")
             else:
                 logging.error(f"❌ Failed to like post from {page_name}. Reason: {response}")
-
+    
     elif choice == 3:
         post_url = input("Enter the post URL: ")
         shortcode = extract_shortcode(post_url)
         media_id = from_shortcode(shortcode) if shortcode else None
-        get_instagram_comments(media_id)
-        print_first_comment_details_and_reply(media_id=media_id)
+
+        if media_id:
+            get_instagram_comments(media_id)
+            print_first_comment_details_and_reply(media_id=media_id)
 
     elif choice == 4:
         page_name = input("Enter the username of the page: ")
-        media_id = get_latest_post_media_id(session, page_name) 
-        get_instagram_comments(media_id)
-        print_first_comment_details_and_reply(media_id=media_id)
+        media_id = get_latest_post_media_id(session, page_name)
 
+        if media_id:
+            get_instagram_comments(media_id)
+            print_first_comment_details_and_reply(media_id=media_id)
+    
+    else:
+        logging.error("❌ Invalid choice. Please enter a number between 1 and 4.")
+    
 if __name__ == "__main__":
     main()
 
