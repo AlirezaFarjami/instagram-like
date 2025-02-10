@@ -54,3 +54,17 @@ def get_standard_headers(custom_headers: dict = None) -> dict:
         headers.update(custom_headers)
 
     return headers
+
+
+def check_session_validity(session):
+    """Check if the session is still valid by making a simple request (e.g., accessing the Instagram homepage)."""
+    try:
+        response = session.get("https://www.instagram.com/")
+        if response.status_code == 200 and 'sessionid' in session.cookies:
+            return True
+        else:
+            logging.error("❌ Session is invalid or expired.")
+            return False
+    except requests.exceptions.RequestException as e:
+        logging.error(f"❌ Error while validating session: {e}")
+        return False
