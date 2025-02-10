@@ -15,6 +15,13 @@ class InstagramCookies(BaseModel):
     def from_list(cls, cookies_list: list):
         """
         Convert a list of cookies into a dictionary and validate it.
+        Handles missing cookies by setting them to an empty string.
         """
+        required_keys = {"csrftoken", "sessionid", "ds_user_id", "mid", "ig_did"}
         cookie_dict = {cookie["name"]: cookie["value"] for cookie in cookies_list}
-        return cls(**cookie_dict)
+
+        # Ensure all required keys are present, fill missing ones with empty string
+        complete_data = {key: cookie_dict.get(key, "") for key in required_keys}
+
+        return cls(**complete_data)
+

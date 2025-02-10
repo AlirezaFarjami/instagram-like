@@ -1,11 +1,12 @@
 import logging
-from helpers import extract_shortcode, from_shortcode, get_latest_post_media_id
-from cookie_manager import extract_cookies, check_instagram_login, save_cookies_to_file
+from utils.helpers import extract_shortcode, from_shortcode
+from services.instagram import get_latest_post_media_id
+from services.cookie_manager import extract_cookies, check_instagram_login, save_cookies_to_file
 from update_params import fetch_instagram_data
 from actions.like import like_post
 from actions.comment import get_instagram_comments, print_first_comment_details_and_reply
-from actions.login import instagram_login
-from request_service import create_instagram_session, check_session_validity
+from services.login import instagram_login
+from utils.request_service import create_instagram_session, check_session_validity
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
