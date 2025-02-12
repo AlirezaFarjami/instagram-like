@@ -2,6 +2,29 @@ import requests
 import logging
 from services.cookie_manager import extract_cookies_from_db
 
+def get_standard_headers(custom_headers: dict = None) -> dict:
+    """
+    Returns the standard Instagram headers. Optionally merges with custom headers.
+    
+    Parameters:
+        custom_headers (dict): A dictionary of custom headers to add or override.
+    
+    Returns:
+        dict: The final headers for the request.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "Referer": "https://www.instagram.com/",
+        "X-Requested-With": "XMLHttpRequest"
+    }
+
+
+    if custom_headers:
+        headers.update(custom_headers)
+
+    return headers
+
+
 def create_instagram_session(username: str, extra_headers: dict = None) -> requests.Session:
     """
     Creates a session with Instagram cookies stored in MongoDB.
@@ -35,7 +58,6 @@ def create_instagram_session(username: str, extra_headers: dict = None) -> reque
 
     logging.info(f"✅ Instagram session created successfully for user {username}.")
     return session
-
 
 
 def check_session_validity(session: requests.Session) -> bool:

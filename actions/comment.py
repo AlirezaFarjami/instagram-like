@@ -1,9 +1,9 @@
 import logging
 import random
 import requests
-from cookie_manager import extract_cookies, save_cookies_to_file
-from helpers import from_shortcode, extract_shortcode
-from request_service import create_instagram_session, get_standard_headers
+from services.cookie_manager import extract_cookies_from_db, save_cookies_to_db
+from utils.helpers import from_shortcode, extract_shortcode
+from utils.request_service import create_instagram_session, get_standard_headers
 
 neutral_comments = [
     "That's interesting! 🤔",
@@ -28,29 +28,31 @@ neutral_comments = [
     "Interesting thought! 🤯"
 ]
 
-def get_instagram_comments(media_id: str):
+def get_instagram_comments(media_id: str, logged_in_username: str, target_page_username: str):
     """
     Fetches comments for a given Instagram media ID and returns them.
     
     Parameters:
         media_id (str): The Instagram media ID of the post.
+        logged_in_username (str): The logged-in username used to fetch cookies from MongoDB.
+        target_page_username (str): The username of the target page whose media we are interacting with.
     
     Returns:
         list: A list of comments from the Instagram post.
     """
-    # Extract cookies
-    cookies = extract_cookies()
+    # Extract cookies from the database using the logged-in username
+    cookies = extract_cookies_from_db(logged_in_username)
     if not cookies:
-        logging.error("❌ No valid cookies found. Exiting.")
+        logging.error(f"❌ No valid cookies found for user {logged_in_username}. Exiting.")
         return []
     
-    # Create a session with cookies
-    session = create_instagram_session(cookies)
+    # Create a session using the stored cookies of the logged-in user
+    session = create_instagram_session(logged_in_username)
     if not session:
         logging.error("❌ Failed to create Instagram session. Exiting.")
         return []
     
-    # Define request headers (some headers from the provided curl request)
+    # Define request headers (using the cookies of the logged-in user)
     custom_headers = {
         "X-CSRFToken": cookies.get("csrftoken", ""),
         "X-IG-App-ID": "936619743392459",
@@ -60,7 +62,7 @@ def get_instagram_comments(media_id: str):
     headers = get_standard_headers(custom_headers=custom_headers)
     session.headers.update(headers)
     
-    # Construct the API URL
+    # Construct the API URL for fetching comments from the target page's media post
     url = f"https://www.instagram.com/api/v1/media/{media_id}/comments/?can_support_threading=true"
     
     try:
@@ -69,14 +71,15 @@ def get_instagram_comments(media_id: str):
         
         # Return the comments directly (no file saving)
         comments = response.json().get('comments', [])
-        logging.info(f"✅ Retrieved {len(comments)} comments")
+        logging.info(f"✅ Retrieved {len(comments)} comments from post by {target_page_username}")
         return comments
         
     except requests.exceptions.RequestException as e:
-        logging.error(f"❌ Failed to fetch comments: {e}")
+        logging.error(f"❌ Failed to fetch comments for {target_page_username}: {e}")
         return []
 
-def reply_to_comment(session: requests.Session, media_id: str, comment_pk: str, username: str):
+
+def reply_to_comment(session: requests.Session, media_id: str, comment_pk: str, commenter_username: str):
     """
     Replies to a given Instagram comment with a random text from neutral_comments.
     
@@ -84,29 +87,32 @@ def reply_to_comment(session: requests.Session, media_id: str, comment_pk: str, 
         session (requests.Session): Authenticated Instagram session.
         media_id (str): The Instagram media ID.
         comment_pk (str): The PK of the comment to reply to.
-        username (str): The username of the comment author.
+        commenter_username (str): The username of the comment author.
     """
     url = f"https://www.instagram.com/api/v1/web/comments/{media_id}/add/"
     payload = {
-        "comment_text": f"@{username} {random.choice(neutral_comments)}",
+        "comment_text": f"@{commenter_username} {random.choice(neutral_comments)}",
         "replied_to_comment_id": comment_pk
     }
     
     try:
         response = session.post(url, data=payload)
         response.raise_for_status()
-        logging.info(f"✅ Successfully replied to comment {comment_pk} by {username}")
+        logging.info(f"✅ Successfully replied to comment {comment_pk} by {commenter_username}")
     except requests.exceptions.RequestException as e:
         logging.error(f"❌ Failed to reply to comment: {e}")
 
-def print_first_comment_details_and_reply(media_id: str):
+
+def print_first_comment_details_and_reply(media_id: str, username: str, target_page_username: str):
     """
     Fetches the first comment from the Instagram post, prints its details, and replies to it.
     
     Parameters:
         media_id (str): The Instagram media ID.
+        username (str): The username used to fetch cookies and create the session.
+        target_page_username (str): The username of the target page whose post we are interacting with.
     """
-    comments = get_instagram_comments(media_id)
+    comments = get_instagram_comments(media_id, username, target_page_username)
     if not comments:
         logging.error("❌ No comments found or failed to fetch comments.")
         return
@@ -114,18 +120,18 @@ def print_first_comment_details_and_reply(media_id: str):
     # Extract the first comment
     first_comment = comments[0]
     comment_pk = first_comment.get('pk')
-    username = first_comment.get('user', {}).get('username')
+    commenter_username = first_comment.get('user', {}).get('username')
     
-    if comment_pk and username:
-        logging.info(f"First Commenter PK: {comment_pk}, Username: {username}")
+    if comment_pk and commenter_username:
+        logging.info(f"First Commenter PK: {comment_pk}, Username: {commenter_username}")
         
-        # Extract cookies and create session
-        cookies = extract_cookies()
-        session = create_instagram_session(cookies)
+        # Create a session using the stored cookies for the provided username
+        session = create_instagram_session(username)
         if session:
-            reply_to_comment(session, media_id, comment_pk, username)
+            reply_to_comment(session, media_id, comment_pk, commenter_username)
     else:
         logging.error("❌ No valid comment found to reply to.")
+
 
 if __name__ == "__main__":
     # Example usage (Replace with actual media ID)
@@ -133,4 +139,5 @@ if __name__ == "__main__":
     shortcode = extract_shortcode(post_url)  
     media_id = from_shortcode(shortcode) if shortcode else None
     if media_id:
-        print_first_comment_details_and_reply(media_id=media_id)
+        test_username = input("Enter your Instagram username for testing: ").strip()
+        print_first_comment_details_and_reply(media_id=media_id, username=test_username)

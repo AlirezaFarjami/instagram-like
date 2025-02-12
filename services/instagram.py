@@ -1,6 +1,7 @@
 import requests
 import logging
-
+import json
+import re
 from database.repositories import load_extracted_parameters
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
