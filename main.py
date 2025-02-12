@@ -131,7 +131,7 @@ You are not logged in to Instagram. Please follow one of the options below to pr
 
             if media_id:
                 get_instagram_comments(media_id=media_id, username=username)
-                print_first_comment_details_and_reply(media_id=media_id, username=username)
+                print_first_comment_details_and_reply(media_id=media_id, account_username=username)
                 save_cookies_to_db(session, username)
 
         elif choice == 4:
@@ -139,7 +139,7 @@ You are not logged in to Instagram. Please follow one of the options below to pr
             media_id = get_latest_post_media_id(session, username, page_name)  # Get media ID from the page
             if media_id:
                 # Pass both logged-in username and target page username
-                print_first_comment_details_and_reply(media_id=media_id, username=username, target_page_username=page_name)  # Reply to the first comment
+                print_first_comment_details_and_reply(media_id=media_id, account_username=username, page_username=page_name)  # Reply to the first comment
                 save_cookies_to_db(session, username)  # Save updated cookies for logged-in user
 
 

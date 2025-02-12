@@ -9,7 +9,7 @@ from database.repositories import load_extracted_parameters
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
-def extract_shortcode(instagram_url) -> str:
+def extract_shortcode(post_url) -> str:
     """
     Extracts and returns the shortcode from an Instagram post or reel URL.
     
@@ -21,10 +21,10 @@ def extract_shortcode(instagram_url) -> str:
     - The shortcode (e.g., "DFiLS_II0aa" or "DFiIwE6u9ga") if found.
     - None if the URL does not match the expected format.
     """
-    match = re.search(r'/(?:p|reel)/([^/]+)/', instagram_url)
+    match = re.search(r'/(?:p|reel)/([^/]+)/', post_url)
     return match.group(1) if match else None
 
-def from_shortcode(shortcode) -> str :
+def from_shortcode(post_shortcode) -> str :
     """
     Converts an Instagram-style shortcode back into its media id (as a decimal string).
     """
@@ -39,7 +39,7 @@ def from_shortcode(shortcode) -> str :
         idx = ig_alphabet.index(ch)
         return bigint_alphabet[idx] if idx < len(bigint_alphabet) else f"<{idx}>"
 
-    intermediate = re.sub(r'\S', repl, shortcode)
+    intermediate = re.sub(r'\S', repl, post_shortcode)
     tokens = re.findall(r'<(\d+)>|(\w)', intermediate)
 
     total = 0
@@ -49,7 +49,7 @@ def from_shortcode(shortcode) -> str :
 
     return str(total)
 
-def to_shortcode(longid) -> str:
+def to_shortcode(media_id) -> str:
     """
     Converts a decimal number (as string or int) into an Instagram-style shortcode.
     """
@@ -77,7 +77,7 @@ def to_shortcode(longid) -> str:
         return ''.join(digits[::-1])
     
     # Convert longid to base-36 string
-    base36_encoded = to_base(int(longid), 36)
+    base36_encoded = to_base(int(media_id), 36)
 
     # Map each character to Instagram's alphabet
     return ''.join(to_ig_map[c] if c in to_ig_map else c for c in base36_encoded)
