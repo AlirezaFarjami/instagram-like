@@ -2,7 +2,7 @@ import requests
 import logging
 from services.cookie_manager import extract_cookies_from_db
 
-def get_standard_headers(custom_headers: dict = None) -> dict:
+def get_standard_headers(custom_headers: dict = {}) -> dict:
     """
     Returns the standard Instagram headers. Optionally merges with custom headers.
     
@@ -25,7 +25,7 @@ def get_standard_headers(custom_headers: dict = None) -> dict:
     return headers
 
 
-def create_instagram_session(username: str, extra_headers: dict = None) -> requests.Session:
+def create_instagram_session(account_username: str, extra_headers: dict = None) -> requests.Session:
     """
     Creates a session with Instagram cookies stored in MongoDB.
 
@@ -37,10 +37,10 @@ def create_instagram_session(username: str, extra_headers: dict = None) -> reque
         requests.Session or None: A session with Instagram cookies, or None if cookies are missing.
     """
     # Retrieve cookies from MongoDB
-    cookies = extract_cookies_from_db(username)
+    cookies = extract_cookies_from_db(account_username)
 
     if not cookies:
-        logging.error(f"❌ Cannot create session: No valid cookies found for user {username}.")
+        logging.error(f"❌ Cannot create session: No valid cookies found for user {account_username}.")
         return None
 
     # Get standard headers and merge with extra headers
@@ -56,11 +56,11 @@ def create_instagram_session(username: str, extra_headers: dict = None) -> reque
     session.cookies.update(cookies)
     session.headers.update(headers)
 
-    logging.info(f"✅ Instagram session created successfully for user {username}.")
+    logging.info(f"✅ Instagram session created successfully for user {account_username}.")
     return session
 
 
-def check_session_validity(session: requests.Session) -> bool:
+def check_session_validity(instagram_session: requests.Session) -> bool:
     """
     Checks if the Instagram session is still valid by making a request.
 
@@ -71,8 +71,8 @@ def check_session_validity(session: requests.Session) -> bool:
         bool: True if session is valid, False otherwise.
     """
     try:
-        response = session.get("https://www.instagram.com/")
-        if response.status_code == 200 and "sessionid" in session.cookies:
+        response = instagram_session.get("https://www.instagram.com/")
+        if response.status_code == 200 and "sessionid" in instagram_session.cookies:
             logging.info("✅ Session is valid.")
             return True
         else:

@@ -7,7 +7,7 @@ from database.repositories import load_extracted_parameters
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
-def get_latest_post_media_id(session: requests.Session, extract_username: str, target_username: str) -> str:
+def get_latest_post_media_id(session: requests.Session, account_username: str, page_username: str) -> str:
     """
     Fetches the latest post media ID for a given Instagram target_username, using the parameters
     extracted from extract_username.
@@ -22,14 +22,14 @@ def get_latest_post_media_id(session: requests.Session, extract_username: str, t
     """
     
     # Load extracted parameters for the given extract_username
-    extracted_params = load_extracted_parameters(extract_username)
+    extracted_params = load_extracted_parameters(account_username )
 
     if not extracted_params:
         logging.error("❌ Extracted parameters are missing or invalid.")
         return None
 
     # Logging for debugging purposes
-    logging.info(f"Extracted parameters for {extract_username}: {extracted_params}")
+    logging.info(f"Extracted parameters for {account_username }: {extracted_params}")
 
     # Construct the payload using the extracted parameters
     payload = {
@@ -61,7 +61,7 @@ def get_latest_post_media_id(session: requests.Session, extract_username: str, t
                 "latest_besties_reel_media": True,
                 "latest_reel_media": True
             },
-            "username": target_username,  # Use the target username to fetch latest post
+            "username": page_username,  # Use the target username to fetch latest post
             "__relay_internal__pv__PolarisIsLoggedInrelayprovider": True
         }),
         "server_timestamps": "true",
@@ -79,7 +79,7 @@ def get_latest_post_media_id(session: requests.Session, extract_username: str, t
 
         if match:
             media_id = match.group(1)
-            logging.info(f"✅ Latest post media ID for {target_username}: {media_id}")
+            logging.info(f"✅ Latest post media ID for {page_username}: {media_id}")
             return media_id  # Return the media ID
         else:
             logging.error("❌ No media ID (pk) found in the response.")
