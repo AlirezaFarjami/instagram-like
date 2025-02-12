@@ -2,8 +2,8 @@ import logging
 import requests
 import json
 import re
-from cookie_manager import save_cookies_to_file
-from helpers import load_extracted_parameters
+# We now import the DB version of cookie saving, but the caller (main.py) handles cookie updates.
+from services.cookie_manager import save_cookies_to_db
 
 def like_post(session: requests.Session, media_id: str):
     """
@@ -50,7 +50,6 @@ def like_post(session: requests.Session, media_id: str):
         # Check if Instagram confirmed the like
         if response_json.get("status") == "ok":
             logging.info(f"✅ Post {media_id} liked successfully.")
-            save_cookies_to_file(session)
             return (True, response.status_code)
         else:
             logging.warning(f"⚠️ Instagram responded with an unexpected message: {response_json}")

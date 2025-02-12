@@ -1,16 +1,20 @@
 import requests
-import json
 import re
 import logging
-from cookie_manager import extract_cookies, save_cookies_to_file
-from request_service import get_standard_headers
-
+from database.repositories import update_mongo, get_user_credentials
+from services.cookie_manager import extract_cookies_from_db
+from utils.request_service import get_standard_headers
+from models.parameters import InstagramParameters
+from models.user import UserCredentials
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 def extract_parameters(html_content, cookies):
-    """Extracts required Instagram parameters using regex and cookies."""
+    """
+    Extracts required Instagram parameters using regex and cookies.
+    This is using the old working regex logic to extract parameters.
+    """
     parameters = {}
 
     # Extract av (User ID)
@@ -81,15 +85,25 @@ def extract_parameters(html_content, cookies):
     return parameters
 
 
-def fetch_instagram_data(url:str = "https://www.instagram.com/", parameters_file = "extracted_params.json"):
-    """Fetches Instagram page HTML and extracts required parameters."""
+def fetch_instagram_data(username: str, url: str = "https://www.instagram.com/"):
+    """
+    Fetches Instagram page HTML, extracts required parameters, and stores them in MongoDB.
+
+    Parameters:
+        username (str): The Instagram username.
+        url (str): The URL to fetch data from.
+
+    Returns:
+        dict: Extracted parameters if successful, None otherwise.
+    """
     session = requests.Session()
 
-    # Load cookies into the session
-    cookies = extract_cookies()
+    # Load cookies from the database
+    cookies = extract_cookies_from_db(username)
     if not cookies:
-        logging.error("❌ No valid cookies found. Exiting.")
-        return
+        logging.error(f"❌ No valid cookies found for user {username}. Exiting.")
+        return None
+
     session.cookies.update(cookies)
 
     try:
@@ -99,13 +113,22 @@ def fetch_instagram_data(url:str = "https://www.instagram.com/", parameters_file
         # Extract necessary parameters
         extracted_data = extract_parameters(response.text, cookies)
 
-        # Save parameters to JSON
-        with open(parameters_file, "w", encoding="utf-8") as outfile:
-            json.dump(extracted_data, outfile, indent=4)
-        logging.info(f"✅ Extracted parameters saved to {parameters_file}")
+        # Validate with Pydantic model
+        validated_parameters = InstagramParameters(**extracted_data)
 
-        # Save updated cookies
-        save_cookies_to_file(session)
+        # Fetch existing user data
+        user_data = get_user_credentials(username)
+        if not user_data:
+            logging.error(f"❌ User {username} does not exist in the database.")
+            return None
+
+        # Update user document with parameters
+        update_mongo("user_credentials", {"username": username}, {"parameters": validated_parameters.model_dump()})
+
+        logging.info(f"✅ Extracted parameters for {username} saved to MongoDB.")
+
+        return validated_parameters.dict()
 
     except requests.exceptions.RequestException as e:
-        logging.error(f"❌ Request failed: {e}")
+        logging.error(f"❌ Request failed for {username}: {e}")
+        return None
