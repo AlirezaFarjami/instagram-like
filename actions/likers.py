@@ -1,13 +1,12 @@
-import requests
 import json
 import logging
 from typing import Optional
 from services.cookie_manager import extract_cookies_from_db
 from utils.request_service import create_instagram_session, get_standard_headers
-from utils.helpers import to_shortcode
+from models.liker import Liker
+from database.repositories import save_to_mongo
 
 def get_likers_of_post(media_id: str, account_username: str, post_url: Optional[str] = "https://instagram.com") -> list:
-
     cookies = extract_cookies_from_db(account_username)
     if not cookies:
         logging.error(f"❌ No valid cookies found for user {account_username}. Exiting.")
@@ -18,7 +17,6 @@ def get_likers_of_post(media_id: str, account_username: str, post_url: Optional[
     if not session:
         logging.error("❌ Failed to create Instagram session. Exiting.")
         return []
-
     
     # Define request headers (using the cookies of the logged-in user)
     custom_headers = {
@@ -28,6 +26,7 @@ def get_likers_of_post(media_id: str, account_username: str, post_url: Optional[
         "X-IG-WWW-Claim": "hmac.AR1Xz_ywrmFEWg9tAlsQAsXKobwAjYkuzkZhbfPwOkkeZoew",
         "Referer": post_url,
     }
+    
     headers = get_standard_headers(custom_headers=custom_headers)
     session.headers.update(headers)
     
@@ -37,14 +36,33 @@ def get_likers_of_post(media_id: str, account_username: str, post_url: Optional[
 
     if response.status_code == 200:
         try:
-            # Try parsing the response as JSON
+            # Parse the response as JSON
             data = response.json()
-            response_text = response.text  # Get raw text
-            # Save the response JSON to a file
-            with open("likers.json", "w", encoding="utf-8") as json_file:
-                json.dump(response.json(), json_file, indent=4, ensure_ascii=False)
+
+            # Extract users (likers)
+            likers_data = data.get('users', [])
+            if not likers_data:
+                print("No likers found.")
+                return []
             
-            print("Response saved to liker.json")
+            # Convert each liker to a Liker Pydantic model
+            likers = []
+            for liker_data in likers_data:
+                liker = Liker(
+                    username=liker_data.get("username"),
+                    user_pk=liker_data.get("pk"),
+                    full_name=liker_data.get("full_name"),
+                    is_private=liker_data.get("is_private"),
+                    profile_pic_id=liker_data.get("profile_pic_id"),
+                    profile_pic_url=liker_data.get("profile_pic_url")
+                )
+                likers.append(liker.dict())  # Store the liker as a dictionary
+
+            # Save likers to MongoDB
+            for liker in likers:
+                save_to_mongo(collection_name="likers", data=liker)
+
+            print(f"✅ Successfully saved {len(likers)} likers to MongoDB.")
         
         except json.JSONDecodeError:
             print("Failed to parse JSON. Saving raw response as text.")
