@@ -5,7 +5,6 @@ from database.repositories import update_mongo, get_user_credentials
 from services.cookie_manager import extract_cookies_from_db
 from utils.request_service import get_standard_headers
 from models.parameters import InstagramParameters
-from models.user import UserCredentials
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -127,7 +126,7 @@ def fetch_instagram_data(username: str, url: str = "https://www.instagram.com/")
 
         logging.info(f"✅ Extracted parameters for {username} saved to MongoDB.")
 
-        return validated_parameters.dict()
+        return validated_parameters.model_dump()
 
     except requests.exceptions.RequestException as e:
         logging.error(f"❌ Request failed for {username}: {e}")

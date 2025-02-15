@@ -49,7 +49,7 @@ def from_shortcode(post_shortcode) -> str :
 
     return str(total)
 
-def to_shortcode(media_id) -> str:
+def to_shortcode(media_id: str) -> str:
     """
     Converts a decimal number (as string or int) into an Instagram-style shortcode.
     """

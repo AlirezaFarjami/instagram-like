@@ -2,7 +2,10 @@ import requests
 import logging
 import json
 import re
+from typing import Optional, Dict
 from database.repositories import load_extracted_parameters
+from services.cookie_manager import extract_cookies_from_db
+from utils.request_service import create_instagram_session, get_standard_headers
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -73,7 +76,7 @@ def get_latest_post_media_id(session: requests.Session, account_username: str, p
 
     if response.status_code == 200:
         response_text = response.text  # Get raw text
-
+        
         # Regular expression to find the first occurrence of "pk":"some_number"
         match = re.search(r'"pk":"(\d+)"', response_text)
 
@@ -87,3 +90,67 @@ def get_latest_post_media_id(session: requests.Session, account_username: str, p
     else:
         logging.error(f"❌ Request failed with status code: {response.status_code}")
         return None  # Return None if request fails
+
+
+def get_post_data(media_id: str, account_username: str, post_url: str) -> Optional[Dict]:
+    """
+    Fetches the post data using Instagram's API endpoint.
+    This will return the user information associated with the post using session.
+
+    Parameters:
+        media_id (str): The Instagram media ID of the post.
+        account_username (str): The logged-in user's Instagram username (used to fetch cookies).
+        post_url (str): The URL of the Instagram post to fetch data from.
+
+    Returns:
+        Optional[Dict]: The post data if found, else None.
+    """
+    # Extract cookies for the logged-in user
+    cookies = extract_cookies_from_db(account_username)
+    if not cookies:
+        logging.error(f"❌ No valid cookies found for user {account_username}. Exiting.")
+        return None
+    
+    # Create a session using the stored cookies
+    session = create_instagram_session(account_username)
+    if not session:
+        logging.error("❌ Failed to create Instagram session. Exiting.")
+        return None
+
+    # Define request headers (using the cookies of the logged-in user)
+    custom_headers = {
+        "X-CSRFToken": cookies.get("csrftoken", ""),
+        "X-IG-App-ID": "936619743392459",
+        "X-ASBD-ID": "129477",
+        "X-IG-WWW-Claim": "hmac.AR1Xz_ywrmFEWg9tAlsQAsXKobwAjYkuzkZhbfPwOkkeZoew",
+        "Referer": post_url,
+    }
+    headers = get_standard_headers(custom_headers=custom_headers)
+    session.headers.update(headers)
+
+    # Instagram API endpoint to get post data
+    url = f"https://www.instagram.com/p/{media_id}/?__a=1"
+
+    try:
+        # Send the request using the session
+        response = session.get(url, headers=headers)
+        if response.status_code == 200:
+            # Parse the response JSON
+            data = response.json()
+            user_data = data.get("graphql", {}).get("shortcode_media", {}).get("owner", {})
+            
+            # Extract and return relevant user data
+            post_info = {
+                "user_pk": user_data.get("id", ""),
+                "username": user_data.get("username", ""),
+                "full_name": user_data.get("full_name", ""),
+                "profile_pic_url": user_data.get("profile_pic_url", ""),
+                "is_private": user_data.get("is_private", False)
+            }
+            return post_info
+        else:
+            logging.error(f"❌ Failed to fetch post data. Status code: {response.status_code}")
+            return None
+    except Exception as e:
+        logging.error(f"❌ Error fetching post data: {e}")
+        return None
