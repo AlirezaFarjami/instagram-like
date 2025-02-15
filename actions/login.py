@@ -76,14 +76,3 @@ def instagram_login(username: str, password: str):
     except requests.exceptions.RequestException as e:
         logging.error(f"❌ Error during login: {e}")
         return False
-
-# Example usage
-if __name__ == "__main__":
-    user = "Zare_shoes_Shop"
-    pwd = "YojxatWNPtcLd223"
-    success = instagram_login(user, pwd)
-
-    if success:
-        logging.info("✅ Login and cookie storage completed successfully.")
-    else:
-        logging.error("❌ Login process failed.")
