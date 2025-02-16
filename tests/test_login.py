@@ -1,7 +1,7 @@
 import logging
 import getpass
 from services.cookie_manager import check_instagram_login
-from services.login import instagram_login
+from actions.login import instagram_login
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 

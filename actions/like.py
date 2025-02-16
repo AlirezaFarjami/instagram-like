@@ -5,7 +5,7 @@ import re
 # We now import the DB version of cookie saving, but the caller (main.py) handles cookie updates.
 from services.cookie_manager import save_cookies_to_db
 
-def like_post(session: requests.Session, media_id: str):
+def like_post(instagram_session: requests.Session, media_id: str):
     """
     Sends a POST request to like an Instagram post.
 
@@ -16,14 +16,14 @@ def like_post(session: requests.Session, media_id: str):
     Returns:
         tuple: (success (bool), message (str) or status_code (int))
     """
-    if session is None:
+    if instagram_session is None:
         logging.error("❌ Session is not initialized. Cannot like post.")
         return (False, "Session is None")
 
     post_url = f"https://www.instagram.com/api/v1/web/likes/{media_id}/like/"
 
     try:
-        response = session.post(post_url)
+        response = instagram_session.post(post_url)
 
         # Handle rate limiting
         if response.status_code == 429:

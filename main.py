@@ -1,6 +1,6 @@
 import logging
 from utils.helpers import extract_shortcode, from_shortcode
-from services.instagram import get_latest_post_media_id
+from actions.instagram import get_latest_post_media_id
 from services.cookie_manager import (
     extract_cookies_from_db,
     check_instagram_login,
@@ -9,9 +9,9 @@ from services.cookie_manager import (
 from services.update_params import fetch_instagram_data
 from actions.like import like_post
 from actions.comment import get_instagram_comments, print_first_comment_details_and_reply
-from services.login import instagram_login
+from actions.login import instagram_login
 from utils.request_service import create_instagram_session, check_session_validity
-
+from actions.likers import get_likers_of_post
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -19,8 +19,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 def main():
     """Main function to create a session and perform Instagram actions."""
     # Prompt for the username (the key used for MongoDB cookie storage)
-    username = input("Enter your Instagram username: ").strip()
-
+    # username = input("Enter your Instagram username: ").strip()
+    username = "Zare_shoes_Shop"
     # Check login status via stored cookies in the database
     is_logged_in = check_instagram_login(username)
     
@@ -75,6 +75,8 @@ You are not logged in to Instagram. Please follow one of the options below to pr
     4) Reply to the top comment of the latest post from a page using its username (e.g., "nike")
        - I will automatically reply to the top comment on the latest post with a random text.
 
+    5) Get Likers of an account
+
     0) ⚠️ Please enter zero to exit ⚠️
     """
         )
@@ -82,7 +84,7 @@ You are not logged in to Instagram. Please follow one of the options below to pr
         try:
             choice = int(input("Please enter the number of your choice: "))
         except ValueError:
-            logging.error("❌ Invalid input. Please enter a number between 0 and 4.")
+            logging.error("❌ Invalid input. Please enter a number between 0 and 5.")
             continue
 
         if choice == 0:
@@ -141,8 +143,32 @@ You are not logged in to Instagram. Please follow one of the options below to pr
                 # Pass both logged-in username and target page username
                 print_first_comment_details_and_reply(media_id=media_id, account_username=username, page_username=page_name)  # Reply to the first comment
                 save_cookies_to_db(session, username)  # Save updated cookies for logged-in user
+        if choice == 5:
+            page_name = input("Enter the username of the page: ").strip()
+            print("""
+    Choose one of the options:
+    1) Enter a specific post URL of the page of the username you entered to scrape it's likers.
+    2) Continue with the username (I will retreive the latest post likers)
+""")
+            try:
+                sub_choice = int(input("Please enter the number of your choice: "))
+            except ValueError:
+                logging.error("❌ Invalid input. Please enter a number between 0 and 2.")
+                continue
+    
+            if sub_choice == 1:
+                post_url = input("Enter the post URL: ").strip()
+                shortcode = extract_shortcode(post_url)
+                media_id = from_shortcode(shortcode) if shortcode else None
+            
+                if media_id:
+                    get_likers_of_post(media_id=media_id, account_username=username, post_url=post_url)
+                    #Implement the rest of the logic here
 
-
+            elif sub_choice == 2:
+                media_id = get_latest_post_media_id(session, username, page_name)
+                if media_id:
+                    get_likers_of_post(media_id=media_id, account_username=username)
 
         print("What else can I do for you? ")
 
