@@ -1,4 +1,4 @@
-# Instagram Auto-Liker
+# Instagram Automation
 
 ## 📌 Project Description
 This project automates **liking posts on Instagram** using **Python and Requests**. It allows users to:
